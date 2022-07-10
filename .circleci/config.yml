@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  slack: circleci/slack@4.10.1
+
 defaults: &node_image
   docker:
     - image: circleci/node:13.8.0
@@ -35,7 +38,10 @@ commands:
             #  Add revert code here. You can find this in the Getting Started section.
               exit 1
             fi
-            
+
+
+
+
 jobs:
   build-frontend:
     <<: *node_image
@@ -108,6 +114,28 @@ jobs:
           name: Back-end scan
           command: |
             cd backend && npm install && npm audit --audit-level=critical
+  notify:
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - slack/notify:
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "plain_text",
+                      "text": "*This is a text notification*",
+                      "emoji": true
+                    }
+                  ]
+                }
+              ]
+            }
+          event: always
+
 #
 #  deploy-infrastructure:
 #    docker:
@@ -288,6 +316,9 @@ workflows:
           requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]
+      - notify:
+          context: dandelion
+
 #      - deploy-infrastructure:
 #          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
 #          filters:
