@@ -200,6 +200,8 @@ jobs:
       - run:
           name: Run Playbook and Configure server
           command: |
+            ls ~/
+            ls ~/project/
             cat ~/inventory.txt
             cd .circleci/ansible && ansible-playbook configure-server.yml -i ~/inventory.txt
 #      - destroy-environment:
