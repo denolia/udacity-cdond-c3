@@ -210,8 +210,8 @@ jobs:
     <<: *node_image
     steps:
       - checkout
-      - restore_cache:
-          keys: [ backend-build ]
+#      - restore_cache:
+#          keys: [ backend-build ]
       - run:
           name: Run migrations
           command: |
@@ -329,28 +329,28 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
-      - build-backend
-      - test-frontend:
-          requires: [build-frontend]
-      - test-backend:
-          requires: [build-backend]
-      - scan-backend:
-          requires: [build-backend]
-      - scan-frontend:
-          requires: [build-frontend]
-      - notify:
-          context: dandelion
-
-      - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-          filters:
-            branches:
-              only: [master]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
+#      - build-frontend
+#      - build-backend
+#      - test-frontend:
+#          requires: [build-frontend]
+#      - test-backend:
+#          requires: [build-backend]
+#      - scan-backend:
+#          requires: [build-backend]
+#      - scan-frontend:
+#          requires: [build-frontend]
+#      - notify:
+#          context: dandelion
+#
+#      - deploy-infrastructure:
+#          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+#          filters:
+#            branches:
+#              only: [master]
+#      - configure-infrastructure:
+#          requires: [deploy-infrastructure]
       - run-migrations:
-          requires: [configure-infrastructure]
+#          requires: [configure-infrastructure]
 #      - deploy-frontend:
 #          requires: [run-migrations]
 #      - deploy-backend:
