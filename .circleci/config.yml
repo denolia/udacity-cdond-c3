@@ -233,14 +233,15 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - restore_cache:
-          keys: [ frontend-build ]
-      - attach_workspace:
-          at: ~/
       - run:
           name: yum -y install tar gzip
           command: |
             yum -y install tar gzip
+      - restore_cache:
+          keys: [ frontend-build ]
+      - attach_workspace:
+          at: ~/
+
       - run:
           name: Get backend url
           command: |
