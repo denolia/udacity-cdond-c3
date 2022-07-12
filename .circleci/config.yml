@@ -3,7 +3,6 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.10.1
 
-# fingerprint 96:00:c6:1b:28:9e:c9:bc:e3:40:f8:8b:93:50:d8:98
 defaults: &node_image
   docker:
     - image: circleci/node:13.8.0
@@ -29,11 +28,11 @@ commands:
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      # Add parameter here     
+      # Add parameter here
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
+          when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS = 1
@@ -87,10 +86,10 @@ jobs:
       - checkout
       - restore_cache:
           keys: [frontend-build]
-#      - run:
-#          name: Front-end tests
-#          command: |
-#            cd frontend && npm install && npm run test
+      - run:
+          name: Front-end tests
+          command: |
+            cd frontend && npm install && npm run test
 
   test-backend:
     <<: *node_image
@@ -98,10 +97,10 @@ jobs:
       - checkout
       - restore_cache:
           keys: [ backend-build ]
-#      - run:
-#          name: Back-end tests
-#          command: |
-#            cd backend && npm install && npm run test
+      - run:
+          name: Back-end tests
+          command: |
+            cd backend && npm install && npm run test
 
   scan-frontend:
     <<: *node_image
@@ -109,10 +108,10 @@ jobs:
       - checkout
       - restore_cache:
           keys: [frontend-build]
-#      - run:
-#          name: Front-end scan
-#          command: |
-#            cd frontend && npm install && npm audit --audit-level=critical
+      - run:
+          name: Front-end scan
+          command: |
+            cd frontend && npm install && npm audit --audit-level=critical
 
   scan-backend:
     <<: *node_image
@@ -120,10 +119,10 @@ jobs:
       - checkout
       - restore_cache:
           keys: [ backend-build ]
-#      - run:
-#          name: Back-end scan
-#          command: |
-#            cd backend && npm install && npm audit --audit-level=critical
+      - run:
+          name: Back-end scan
+          command: |
+            cd backend && npm install && npm audit --audit-level=critical
   notify:
     docker:
       - image: 'cimg/base:stable'
@@ -203,15 +202,15 @@ jobs:
             ls ~/
             ls ~/project/.circleci/ansible
             cd .circleci/ansible && ansible-playbook configure-server.yml -i inventory.txt
-#      - destroy-environment:
-#          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
 
   run-migrations:
     <<: *node_image
     steps:
       - checkout
-#      - restore_cache:
-#          keys: [ backend-build ]
+      - restore_cache:
+          keys: [ backend-build ]
       - run:
           name: Run migrations
           command: |
@@ -226,31 +225,45 @@ jobs:
             then
               curl https://kvdb.io/UrCd78QyuTn8bJL3znEhAa/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1' -k
             fi
-      # Here's where you will add some code to rollback on failure
-#      - destroy-environment:
-#          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
 
-#  deploy-frontend:
-#    docker:
-#      # Docker image here that supports AWS CLI
-#    steps:
-#      # Checkout code from git
-#      - run:
-#          name: Install dependencies
-#          command: |
-#            # your code here
-#      - run:
-#          name: Get backend url
-#          command: |
-#            # your code here
-#            export API_URL="http://${BACKEND_IP}:3030"
-#            echo "${API_URL}"
-#      - run:
-#          name: Deploy frontend objects
-#          command: |
-#            # your code here
-#      # Here's where you will add some code to rollback on failure
-#
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [ frontend-build ]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: yum -y install tar gzip
+          command: |
+            yum -y install tar gzip
+      - run:
+          name: Get backend url
+          command: |
+            # your code here
+            export BACKEND_IP=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:project,Values=udapeople" --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL = ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: Build frontend
+          command: |
+            cd frontend && npm install && npm run build
+      - run:
+          name: Deploy frontend objects
+          command: |
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      # TODO revert migration on fail
+      # Here's where you will add some code to rollback on failure
+
 #  deploy-backend:
 #    docker:
 #      # Docker image here that supports Ansible
@@ -329,7 +342,7 @@ jobs:
 workflows:
   default:
     jobs:
-#      - build-frontend
+      - build-frontend
 #      - build-backend
 #      - test-frontend:
 #          requires: [build-frontend]
@@ -342,17 +355,20 @@ workflows:
 #      - notify:
 #          context: dandelion
 #
+      - deploy-infrastructure:
+          requires: [build-frontend]
+
 #      - deploy-infrastructure:
 #          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
 #          filters:
 #            branches:
 #              only: [master]
-#      - configure-infrastructure:
-#          requires: [deploy-infrastructure]
-      - run-migrations
-#          requires: [configure-infrastructure]
-#      - deploy-frontend:
-#          requires: [run-migrations]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
+      - deploy-frontend:
+          requires: [run-migrations]
 #      - deploy-backend:
 #          requires: [run-migrations]
 #      - smoke-test:
