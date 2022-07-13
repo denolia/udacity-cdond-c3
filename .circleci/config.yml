@@ -27,21 +27,17 @@ commands:
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
-    parameters:
-      # Add parameter here
     steps:
       - run:
           name: Revert migrations
           when: on_fail
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
+            SUCCESS=`curl https://kvdb.io/UrCd78QyuTn8bJL3znEhAa/migration_${CIRCLE_WORKFLOW_ID:0:7}`
             if(( $SUCCESS==1 )); 
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              cd ~/project/backend
+              npm install
+              npm run migrations:revert
             fi
 
 jobs:
@@ -240,20 +236,19 @@ jobs:
             curl --silent --location https://rpm.nodesource.com/setup_13.x | bash -
             yum -y install nodejs
             node --version
-#      - restore_cache:
-#          keys: [ frontend-build ]
+      - restore_cache:
+          keys: [ frontend-build ]
       - attach_workspace:
           at: ~/
-
-#      - run:
-#          name: Get backend url
-#          command: |
-#            # your code here
-#            export BACKEND_IP=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:project,Values=udapeople" --output text)
-#            export API_URL="http://${BACKEND_IP}:3030"
-#            echo "API_URL = ${API_URL}"
-#            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
-#            cat frontend/.env
+      - run:
+          name: Get backend url
+          command: |
+            # your code here
+            export BACKEND_IP=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:project,Values=udapeople" --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL = ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
       - run:
           name: Build frontend
           command: |
@@ -266,8 +261,7 @@ jobs:
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
-      # TODO revert migration on fail
-      # Here's where you will add some code to rollback on failure
+      - revert-migrations
 
 #  deploy-backend:
 #    docker:
@@ -347,31 +341,27 @@ jobs:
 workflows:
   default:
     jobs:
-#      - build-frontend
-#      - build-backend
-#      - test-frontend:
-#          requires: [build-frontend]
-#      - test-backend:
-#          requires: [build-backend]
-#      - scan-backend:
-#          requires: [build-backend]
-#      - scan-frontend:
-#          requires: [build-frontend]
 #      - notify:
 #          context: dandelion
-#
-#      - deploy-infrastructure:
-#          requires: [build-frontend]
-
-#      - deploy-infrastructure:
-#          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-#          filters:
-#            branches:
-#              only: [master]
-#      - configure-infrastructure:
-#          requires: [deploy-infrastructure]
-#      - run-migrations:
-#          requires: [configure-infrastructure]
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [master]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       - deploy-frontend
 #          requires: [run-migrations]
 #      - deploy-backend:
