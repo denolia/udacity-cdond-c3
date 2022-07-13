@@ -5,17 +5,13 @@
     path: ~/web
     state: directory
 
-- name: Copy index test page
+- name: Copy backend artifact
   template:
     src: "../../../../artifact.tar.gz"
-    dest: "artifact.tar.gz"
+    dest: "~/web/artifact.tar.gz"
 
 - name: Installing backend
-  shell: |
-    tar -xf artifact.tar.gz
-    npm install
+  shell: cd ~/web/ && tar -xf artifact.tar.gz && npm install
 
 - name: Executing node
-  shell: |
-    pm2 stop default
-    pm2 start npm -- start
+  shell: cd ~/web/ && pm2 stop default && pm2 start npm -- start
