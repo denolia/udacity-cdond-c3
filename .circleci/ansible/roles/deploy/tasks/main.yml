@@ -7,8 +7,8 @@
 
 - name: Copy backend artifact
   template:
-    src: "../../../../artifact.tar.gz"
-    dest: "~/web/artifact.tar.gz"
+    src: ../../../../artifact.tar.gz
+    dest: ~/web/artifact.tar.gz
 
 - name: Installing backend
   shell: cd ~/web/ && tar -xf artifact.tar.gz && npm install
