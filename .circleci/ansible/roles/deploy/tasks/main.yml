@@ -9,7 +9,7 @@
   template:
     src: ../../../../artifact.tar.gz
     dest: ~/web/artifact.tar.gz
-
+# TODO write the tar.gz right into the files folder
 - name: Installing backend
   shell: cd ~/web/ && tar -xf artifact.tar.gz && npm install
 
