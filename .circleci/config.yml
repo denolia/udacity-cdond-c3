@@ -280,8 +280,7 @@ jobs:
           name: Deploy backend
           command: |
             # Zip the directory
-            mkdir .circleci/ansible/roles/deploy/files
-            tar -C backend -czvf .circleci/ansible/roles/deploy/files/artifact.tar.gz .
+            tar -C backend -czvf .circleci/ansible/roles/deploy/artifact.tar.gz .
             cd .circleci/ansible
             echo "Contents of the inventory.txt file is -------"
             cat inventory.txt
