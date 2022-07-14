@@ -7,7 +7,7 @@
 
 - name: Copy backend artifact
   template:
-    src: ../../../../artifact.tar.gz
+    src: artifact.tar.gz
     dest: ~/web/artifact.tar.gz
 # TODO write the tar.gz right into the files folder
 - name: Installing backend
